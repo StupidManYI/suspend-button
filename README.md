@@ -1,7 +1,7 @@
 # suspend-button
 
 a react suspend button
-以前有位老兄很早发布了一这个组件(- [原作地址](https://github.com/kkfor/suspend-button)),很好用. 但是是基于移动端的,所以我把pc端也补上,顺便支持ts;
+以前有位老兄很早发布了一这个组件([原作地址](https://github.com/kkfor/suspend-button)),很好用. 但是是基于移动端的,所以我把pc端也补上,顺便支持ts;
 
 - [demo](https://stupidmanyi.github.io/suspend-button/)
 - [github](https://github.com/StupidManYI/suspend-button)
