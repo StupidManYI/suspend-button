@@ -30,7 +30,7 @@ class App extends Component {
         <p>移动端拖动</p>
         <p>移动端拖动</p>
         <p>移动端拖动</p>
-        <SuspendButton img={logo}></SuspendButton>
+        <SuspendButton onClick={()=>{console.log(111);}} img={logo}></SuspendButton>
       </div>
     );
   }
