@@ -1,322 +1,205 @@
 /*** src/index.ts  ***/
 import React, { useRef, useState, useEffect } from 'react';
 import './styles.css';
-var _ = require('lodash');
 
 
 type buttonStatusType = {
-  moving: boolean,
   oW: number,
   oH: number,
   htmlWidth: number, // 页面宽度
   htmlHeight: number,
   bWidth: number, // 悬钮宽度
   bHeight: number,
-  oLeft: number,
-  oTop: number,
-  click: boolean // 是否是点击
+  offsetLeft: number,
+  offsetTop: number,
 }
 
-const defaultButtonStatus: buttonStatusType = {
-  moving: false,
+
+
+const initButtonStatus: buttonStatusType = {
   oW: 0,
   oH: 0,
   htmlWidth: 0, // 页面宽度
   htmlHeight: 0,
   bWidth: 0, // 悬钮宽度
   bHeight: 0,
-  oLeft: 0,
-  oTop: 0,
-  click: false // 是否是点击
+  offsetLeft: 0,
+  offsetTop: 0,
+}
+type Size = {
+  width: number, height: number
 }
 
-const _isMobile = (): boolean => {
-  let flag = (/(phone|pad|pod|iPhone|iPod|ios|iPad|Android|Mobile|BlackBerry|IEMobile|MQQBrowser|JUC|Fennec|wOSBrowser|BrowserNG|WebOS|Symbian|Windows Phone)/i).test(navigator.userAgent);
-  return flag;
-}
-
+let moving = false;
 
 const MyComponent: React.FC = (props: any) => {
   const { img, style, onClick } = props;
-  const SpanRef = useRef<HTMLDivElement>(null);
-  const [buttonStatus, setButtonStatus] = useState<buttonStatusType>(defaultButtonStatus);
+  const BtRef = useRef<HTMLDivElement>(null);
+  const [buttonStatus, setButtonStatus] = useState<buttonStatusType>(initButtonStatus);
+  const [transationRecord, setTransationRecord] = useState({ offsetLeft: 0, offsetTop: 0 })
+  const [click, setClick] = useState(false);
+  const [screenSize, setScreenSize] = useState<Size>({ width: 0, height: 0 });
+  const [buttonSize, setButtonSize] = useState<Size>({ width: 0, height: 0 });
 
-  // 移动触发
-  const onTouchStart = (e: any) => {
-    console.log('====================================');
-    console.log("onTouchStart");
-    console.log('====================================');
-    let buttonStatusCopy = _.cloneDeep(buttonStatus);
-    const current = SpanRef.current as HTMLDivElement;
-    e = e.touches[0];
 
-    buttonStatusCopy.click = true
-
-    buttonStatusCopy.oW = e.clientX - current.getBoundingClientRect().left
-    buttonStatusCopy.oH = e.clientY - current.getBoundingClientRect().top
-
-    buttonStatusCopy.htmlWidth = document.documentElement.clientWidth
-    buttonStatusCopy.htmlHeight = document.documentElement.clientHeight
-
-    buttonStatusCopy.bWidth = current.offsetWidth
-    buttonStatusCopy.bHeight = current.offsetHeight
-
-    buttonStatusCopy.oLeft = e.clientX - buttonStatusCopy.oW
-    buttonStatusCopy.oTop = e.clientY - buttonStatusCopy.oH
-
-    buttonStatusCopy.moving = true;
-    setButtonStatus(buttonStatusCopy);
-  }
-  const onMouseDown = (e: any) => {
-
-    let buttonStatusCopy = _.cloneDeep(buttonStatus);
-    const current = SpanRef.current as HTMLDivElement;
-    buttonStatusCopy.click = true
-
-    buttonStatusCopy.oW = e.clientX - current.offsetLeft;
-    buttonStatusCopy.oH = e.clientY - current.offsetTop;
-    buttonStatusCopy.htmlWidth = document.documentElement.clientWidth
-    buttonStatusCopy.htmlHeight = document.documentElement.clientHeight
-
-    buttonStatusCopy.bWidth = current.offsetWidth
-    buttonStatusCopy.bHeight = current.offsetHeight
-
-    buttonStatusCopy.oLeft = e.clientX - buttonStatusCopy.oW
-    buttonStatusCopy.oTop = e.clientY - buttonStatusCopy.oH
-
-    buttonStatusCopy.moving = true;
-    setButtonStatus(buttonStatusCopy);
-
+  /**
+   * ----------PC
+   */
+  /**
+   * 鼠标按下,阻止默认事件,开启click确认
+   * @param e 
+   */
+  const onClickDown = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+    e.stopPropagation();
+    setClick(true);
   }
 
-  useEffect(() => {
-    if (!_isMobile()) {
-      if (buttonStatus.moving) {
-        console.log('====================================');
-        console.log("onMouseDown", buttonStatus.moving);
-        console.log(buttonStatus.oW);
-        console.log('====================================');
-        document.onmousemove = onMouseMove2;
-        document.onmouseup = onMouseUp2;
+  /**
+   * 鼠标松开,判断是点击还是移动,处理对应的事件
+   * @param e 
+   */
+  const onClickUp = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
+    setClick(false);
+    if (!moving) {
+      clickHandler();
+    } else {
+      document.onmousemove = null;
+      const current = BtRef.current as HTMLDivElement;
+      current.className = current.className + " suspend-button-ts-animate";
+      let offsetLeft = transationRecord.offsetLeft
+      if (offsetLeft < (screenSize.width - buttonSize.width) / 2) {
+        offsetLeft = 0
       } else {
+        offsetLeft = screenSize.width - buttonSize.width
+      }
+      setTransationRecord(Object.assign({}, transationRecord, { offsetLeft: offsetLeft }));
+      moving = false;
+    }
+  }
+
+  /**
+   * 执行click方法
+   */
+  const clickHandler = (() => {
+    onClick();
+  })
+
+  /**
+   * 移动中
+   */
+  useEffect(() => {
+    if (click) {
+      document.body.style.userSelect = 'none'
+      document.onmousemove = (event) => {
+        if (!click) return;
+        moving = true;
+        event = event || window.event;
+        let moveX = event.clientX - buttonSize.width / 2; //x轴偏移量
+        let moveY = event.clientY - buttonSize.height / 2;//y轴偏移量
+        if (moveX < 0) {
+          moveX = 0
+        } else if (moveX > screenSize.width - buttonSize.width) {
+          moveX = screenSize.width - buttonSize.width;
+        }
+        if (moveY < 0) {
+          moveY = 0
+        } else if (moveY > screenSize.height - buttonSize.height) {
+          moveY = screenSize.height - buttonSize.height;
+        }
+        const transationRecord = { offsetLeft: moveX, offsetTop: moveY };
+        setTransationRecord(transationRecord);
+      }
+
+    } else {
+      if (document.onmousemove != null) {
         document.onmousemove = null;
-        document.onmouseup = null;
+        document.body.style.userSelect = 'auto'
       }
     }
-
     return () => {
-      // document.onmousemove = null;
-      // document.onmouseup = null;
+      document.onmousemove = null;
     }
-  }, [buttonStatus.moving])
+  }, [click])
 
-  // 移动结束
-  const onTouchEnd = (e: any) => {
-    let buttonStatusCopy = _.cloneDeep(buttonStatus);;
-    const current = SpanRef.current as HTMLDivElement;
-    buttonStatusCopy.moving = false
-
-    current.className = current.className + " t-suspend-button-animate"
-
-    // 左侧距离
-    let oLeft = buttonStatusCopy.oLeft
-    if (oLeft < (buttonStatusCopy.htmlWidth - buttonStatusCopy.bWidth) / 2) {
-      oLeft = 0
-    } else {
-      oLeft = buttonStatusCopy.htmlWidth - buttonStatusCopy.bWidth
-    }
-
-    if (buttonStatusCopy.click) {
-      onClick();
-    }
-    // }
-    // if(oTop < 0) {
-    //   oTop = 0
-    // } else if (oTop > this.htmlHeight - this.bHeight) {
-    //   oTop = this.htmlHeight - this.bHeight
-    // }
-    buttonStatusCopy.oLeft = oLeft;
-    setButtonStatus(buttonStatusCopy);
-  }
-
-
-
-  // 开始移动
-  const onTouchMove = (e: any) => {
-    const current = SpanRef.current as HTMLDivElement;
-    current.className = "t-suspend-button"
-    buttonStatus.moving && onMove(e)
-  }
-
-  // 移动中
-  const onMove = (e: any) => {
-    e = e.touches[0]
-    console.log(e);
-
-    let buttonStatusCopy = _.cloneDeep(buttonStatus);
-    buttonStatusCopy.click = false
-
-    // 左侧距离
-    let oLeft = e.clientX - buttonStatusCopy.oW
-    let oTop = e.clientY - buttonStatusCopy.oH
-    if (oLeft < 0) {
-      oLeft = 0
-    } else if (oLeft > buttonStatusCopy.htmlWidth - buttonStatusCopy.bWidth) {
-      oLeft = buttonStatusCopy.htmlWidth - buttonStatusCopy.bWidth
-    }
-    if (oTop < 0) {
-      oTop = 0
-    } else if (oTop > buttonStatusCopy.htmlHeight - buttonStatusCopy.bHeight) {
-      oTop = buttonStatusCopy.htmlHeight - buttonStatusCopy.bHeight
-    }
-    buttonStatusCopy.oLeft = oLeft;
-    buttonStatusCopy.oTop = oTop;
-    setButtonStatus(buttonStatusCopy);
-  }
-
-  const onMouseMove = ((e: any) => {
-    if (!buttonStatus.moving) return;
-    const current = SpanRef.current as HTMLDivElement;
-    let buttonStatusCopy = _.cloneDeep(buttonStatus);
-    current.className = "t-suspend-button"
-    const event = e || window.event;
-    var moveX = event.clientX - buttonStatus.oW;
-    var moveY = event.clientY - buttonStatus.oH;
-    if (moveX < 0) {
-      moveX = 0
-    } else if (moveX > window.innerWidth - current.offsetWidth) {
-      moveX = window.innerWidth - current.offsetWidth
-    }
-    if (moveY < 0) {
-      moveY = 0
-    } else if (moveY > window.innerHeight - current.offsetHeight) {
-      moveY = window.innerHeight - current.offsetHeight
-    }
-
-    buttonStatusCopy.oLeft = moveX + 'px';;
-    buttonStatusCopy.oTop = moveY + 'px'
-    setButtonStatus(buttonStatusCopy);
-  });
-  const onMouseMove2 = ((e: any) => {
-    console.log('====================================');
-    console.log("onMouseMove2");
-    console.log('====================================');
-    let buttonStatusCopy = _.cloneDeep(buttonStatus);
-    buttonStatusCopy.click = false
-    const event = e || window.event;
-    // 左侧距离
-    let oLeft = event.clientX - buttonStatusCopy.oW
-    let oTop = event.clientY - buttonStatusCopy.oH
-    if (oLeft < 0) {
-      oLeft = 0
-    } else if (oLeft > buttonStatusCopy.htmlWidth - buttonStatusCopy.bWidth) {
-      oLeft = buttonStatusCopy.htmlWidth - buttonStatusCopy.bWidth
-    }
-    if (oTop < 0) {
-      oTop = 0
-    } else if (oTop > buttonStatusCopy.htmlHeight - buttonStatusCopy.bHeight) {
-      oTop = buttonStatusCopy.htmlHeight - buttonStatusCopy.bHeight
-    }
-    buttonStatusCopy.oLeft = oLeft;
-    buttonStatusCopy.oTop = oTop;
-    setButtonStatus(buttonStatusCopy);
-  });
-  const onMouseUp = ((e: any) => {
-    if (!buttonStatus.moving) return;
-    const current = SpanRef.current as HTMLDivElement;
-    let buttonStatusCopy = _.cloneDeep(buttonStatus);
-
-    buttonStatusCopy.moving = false
-
-    current.className = current.className + " t-suspend-button-animate"
-
-    // 左侧距离
-    let oLeft = buttonStatusCopy.oLeft
-    if (oLeft < (buttonStatusCopy.htmlWidth - buttonStatusCopy.bWidth) / 2) {
-      oLeft = 0
-    } else {
-      oLeft = buttonStatusCopy.htmlWidth - buttonStatusCopy.bWidth
-    }
-
-    // if (buttonStatusCopy.click) {
-    //   onClick();
-    // }
-    // }
-    // if(oTop < 0) {
-    //   oTop = 0
-    // } else if (oTop > this.htmlHeight - this.bHeight) {
-    //   oTop = this.htmlHeight - this.bHeight
-    // }
-    buttonStatusCopy.oLeft = oLeft;
-    setButtonStatus(buttonStatusCopy);
-  });
-  const onMouseUp2 = ((e: any) => {
-    console.log('====================================');
-    console.log("onMouseUp2");
-    console.log('====================================');
-    let buttonStatusCopy = _.cloneDeep(buttonStatus);;
-    const current = SpanRef.current as HTMLDivElement;
-    buttonStatusCopy.moving = false
-
-    current.className = current.className + " t-suspend-button-animate"
-
-    // 左侧距离
-    let oLeft = buttonStatusCopy.oLeft
-    if (oLeft < (buttonStatusCopy.htmlWidth - buttonStatusCopy.bWidth) / 2) {
-      oLeft = 0
-    } else {
-      oLeft = buttonStatusCopy.htmlWidth - buttonStatusCopy.bWidth
-    }
-
-    if (buttonStatusCopy.click) {
-      onClick();
-    }
-    // }
-    // if(oTop < 0) {
-    //   oTop = 0
-    // } else if (oTop > this.htmlHeight - this.bHeight) {
-    //   oTop = this.htmlHeight - this.bHeight
-    // }
-    buttonStatusCopy.oLeft = oLeft;
-    setButtonStatus(buttonStatusCopy);
-  });
-
-
+  /**
+   * 初始化函数,获取拖拽 dom大小 以及 屏幕大小
+   */
   useEffect(() => {
-    if (_isMobile()) {
-      SpanRef.current?.addEventListener(
-        "touchmove",
-        e => {
-          if (e.cancelable) {
-            e.preventDefault()
-          }
-        },
-        {
-          passive: false
-        }
-      )
-    }
-
+    setScreenSize({ width: document.documentElement.clientWidth, height: document.documentElement.clientHeight })
+    const currentButton = BtRef.current as HTMLDivElement;
+    setButtonSize({ width: currentButton.clientWidth, height: currentButton.clientHeight })
 
     return () => {
 
     }
   }, [])
 
-  return <span
-    className="t-suspend-button"
-    ref={SpanRef}
-    onTouchStart={e => onTouchStart(e)}
-    onMouseDown={e => onMouseDown(e)}
-    onTouchMove={e => onTouchMove(e)}
-    onTouchEnd={e => onTouchEnd(e)}
+
+  /**
+   * ----------WAP
+   */
+  const onTouchStart = ((e: React.TouchEvent<HTMLDivElement>) => {
+    e.stopPropagation();
+    setClick(true);
+  });
+
+  const onTouchMove = ((e: React.TouchEvent<HTMLDivElement>) => {
+    let event = e.touches[0] as any;//any大法助我
+    document.body.style.userSelect = 'none'; //让其他元素不可以选中
+    moving = true;
+    if (!click) return;
+    moving = true;
+    let moveX = event.clientX - buttonSize.width / 2; //x轴偏移量
+    let moveY = event.clientY - buttonSize.height / 2;//y轴偏移量
+    if (moveX < 0) {
+      moveX = 0
+    } else if (moveX > screenSize.width - buttonSize.width) {
+      moveX = screenSize.width - buttonSize.width;
+    }
+    if (moveY < 0) {
+      moveY = 0
+    } else if (moveY > screenSize.height - buttonSize.height) {
+      moveY = screenSize.height - buttonSize.height;
+    }
+    const transationRecord = { offsetLeft: moveX, offsetTop: moveY };
+    setTransationRecord(transationRecord);
+  });
+
+  const onTouchEnd = ((e: React.TouchEvent<HTMLDivElement>) => {
+    setClick(false);
+    if (!moving) {
+      clickHandler();
+    } else {
+      const current = BtRef.current as HTMLDivElement;
+      current.className = current.className + " suspend-button-ts-animate";
+      let offsetLeft = transationRecord.offsetLeft
+      if (offsetLeft < (screenSize.width - buttonSize.width) / 2) {
+        offsetLeft = 0
+      } else {
+        offsetLeft = screenSize.width - buttonSize.width
+      }
+      setTransationRecord(Object.assign({}, transationRecord, { offsetLeft: offsetLeft }));
+      moving = false;
+    }
+  });
+
+
+
+  return <div
+    className="suspend-button-ts"
+    ref={BtRef}
+    onMouseDown={onClickDown}
+    onMouseUp={onClickUp}
+    onTouchStart={onTouchStart}
+    onTouchMove={onTouchMove}
+    onTouchEnd={onTouchEnd}
+
     style={{
-      left: `${buttonStatus.oLeft}px`,
-      top: `${buttonStatus.oTop}px`,
+      transform: `translate3d(${transationRecord.offsetLeft}px,${transationRecord.offsetTop}px,0px)`,
       ...style
     }}
   >
-    {img && <img src={img} alt="" />}
-  </span>
+    {img && <img src={img} />}
+  </div>
 }
 export default MyComponent;
