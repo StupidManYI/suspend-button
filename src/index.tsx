@@ -1,31 +1,8 @@
 /*** src/index.ts  ***/
 import React, { useRef, useState, useEffect } from 'react';
-import './styles.css';
+// import "./index.module.css"
+import classes from './index.module.css';
 
-
-type buttonStatusType = {
-  oW: number,
-  oH: number,
-  htmlWidth: number, // 页面宽度
-  htmlHeight: number,
-  bWidth: number, // 悬钮宽度
-  bHeight: number,
-  offsetLeft: number,
-  offsetTop: number,
-}
-
-
-
-const initButtonStatus: buttonStatusType = {
-  oW: 0,
-  oH: 0,
-  htmlWidth: 0, // 页面宽度
-  htmlHeight: 0,
-  bWidth: 0, // 悬钮宽度
-  bHeight: 0,
-  offsetLeft: 0,
-  offsetTop: 0,
-}
 type Size = {
   width: number, height: number
 }
@@ -33,9 +10,11 @@ type Size = {
 let moving = false;
 
 const MyComponent: React.FC = (props: any) => {
+  console.log('====================================');
+  console.log("classes",classes);
+  console.log('====================================');
   const { img, style, onClick } = props;
   const BtRef = useRef<HTMLDivElement>(null);
-  const [buttonStatus, setButtonStatus] = useState<buttonStatusType>(initButtonStatus);
   const [transationRecord, setTransationRecord] = useState({ offsetLeft: 0, offsetTop: 0 })
   const [click, setClick] = useState(false);
   const [screenSize, setScreenSize] = useState<Size>({ width: 0, height: 0 });
@@ -186,14 +165,15 @@ const MyComponent: React.FC = (props: any) => {
 
 
   return <div
-    className="suspend-button-ts"
+  // className="suspendButtonTs"
+    className={classes.suspendButtonTs}
     ref={BtRef}
     onMouseDown={onClickDown}
     onMouseUp={onClickUp}
     onTouchStart={onTouchStart}
     onTouchMove={onTouchMove}
     onTouchEnd={onTouchEnd}
-
+    
     style={{
       transform: `translate3d(${transationRecord.offsetLeft}px,${transationRecord.offsetTop}px,0px)`,
       ...style
