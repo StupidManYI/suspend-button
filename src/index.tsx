@@ -1,8 +1,7 @@
 /*** src/index.ts  ***/
 import React, { useRef, useState, useEffect } from 'react';
 // import "./index.module.css"
-import classes from './index.module.css';
-
+import styles from './index.css';
 type Size = {
   width: number, height: number
 }
@@ -11,7 +10,7 @@ let moving = false;
 
 const MyComponent: React.FC = (props: any) => {
   console.log('====================================');
-  console.log("classes",classes);
+  console.log("classes", styles);
   console.log('====================================');
   const { img, style, onClick } = props;
   const BtRef = useRef<HTMLDivElement>(null);
@@ -44,7 +43,8 @@ const MyComponent: React.FC = (props: any) => {
     } else {
       document.onmousemove = null;
       const current = BtRef.current as HTMLDivElement;
-      current.className = current.className + " suspend-button-ts-animate";
+      current.className = current.className + ` ${styles['suspendButtonTs-animate']}`;
+      // current.className = current.className + " suspendButtonTs-animate";
       let offsetLeft = transationRecord.offsetLeft
       if (offsetLeft < (screenSize.width - buttonSize.width) / 2) {
         offsetLeft = 0
@@ -150,7 +150,7 @@ const MyComponent: React.FC = (props: any) => {
       clickHandler();
     } else {
       const current = BtRef.current as HTMLDivElement;
-      current.className = current.className + " suspend-button-ts-animate";
+      current.className = current.className + ` ${styles['suspendButtonTs-animate']}`;
       let offsetLeft = transationRecord.offsetLeft
       if (offsetLeft < (screenSize.width - buttonSize.width) / 2) {
         offsetLeft = 0
@@ -165,15 +165,15 @@ const MyComponent: React.FC = (props: any) => {
 
 
   return <div
-  // className="suspendButtonTs"
-    className={classes.suspendButtonTs}
+    // className="suspendButtonTs"
+    className={`${styles['suspendButtonTs']}`}
     ref={BtRef}
     onMouseDown={onClickDown}
     onMouseUp={onClickUp}
     onTouchStart={onTouchStart}
     onTouchMove={onTouchMove}
     onTouchEnd={onTouchEnd}
-    
+
     style={{
       transform: `translate3d(${transationRecord.offsetLeft}px,${transationRecord.offsetTop}px,0px)`,
       ...style

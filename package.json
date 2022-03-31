@@ -1,6 +1,6 @@
 {
   "name": "suspend-button-luckytree",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "a react suspend button",
   "main": "dist/index.js",
   "scripts": {

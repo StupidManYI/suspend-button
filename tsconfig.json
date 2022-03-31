@@ -44,6 +44,7 @@
     }
   },
   "include": [
-    "./src/**/*"
+    "./src/**/*",
+    "global.d.ts"
   ]
 }
